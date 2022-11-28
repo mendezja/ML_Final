@@ -23,11 +23,11 @@ from scipy import stats
 class EDA(object):
 
     def __init__(self):
-        self.df = pd.read_csv("PulsarStar.csv")
-        self.df.columns = ['m_ip', 'std_ip', 'ek_ip', 's_ip', 'm_curve', 'std_curve', 'ek_curve',
-                           's_curve', 'target']
-        self.columns = self.df.columns
-
+        # Removed columns that had too many missing data or didn't logically make sense to include 
+        self.columns = ['CONTRACTOR','STONE COLOR', 'DATE INSTALLED','PLACE INSTALLED', 'SQFT','PROJECT COST', 'MATERIAL COST', 'DEPOSIT', 'PAYMENT DATE']
+        self.df = pd.read_csv("production19-21.csv", usecols=self.columns)
+        print(self.df)
+        
     def prepare_data(self):
         df = self.df
 
@@ -157,8 +157,6 @@ class EDA(object):
 
 def main():
     eda = EDA()
-    eda.draw_plots()
-    eda.feature_selection()
 
 
 if __name__ == "__main__":
