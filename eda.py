@@ -26,7 +26,7 @@ class EDA(object):
         # Removed columns that had too many missing data or didn't logically make sense to include
         self.columns = ['CONTRACTOR', 'STONE COLOR', 'DATE INSTALLED',
                         'PLACE INSTALLED', 'SQFT', 'PROJECT COST', 'DEPOSIT', 'PAYMENT DATE']
-        self.df = pd.read_csv("production19-21.csv", usecols=self.columns)
+        self.df = pd.read_csv("Production2019-2021.csv", usecols=self.columns)
 
     def prepare_data(self):
         df = self.df
@@ -59,16 +59,18 @@ class EDA(object):
         # Turn string into date
         df['DATE INSTALLED'] = pd.to_datetime(df['DATE INSTALLED'], errors='coerce')
         df['PAYMENT DATE'] = pd.to_datetime(df['PAYMENT DATE'], errors='coerce')
-        df['DAYS_TO_PAYMENT'] = (df['PAYMENT DATE'] - df['DATE INSTALLED'])
+        df['DAYS_TO_PAYMENT'] = (df['PAYMENT DATE'] - df['DATE INSTALLED']).dt.days
 
         # Drop rows without date
-        df = df.replace({'nan': None})[~pd.isnull(df).any(axis=1)]
-        df = df.dropna(subset = ['DATE INSTALLED','PAYMENT DATE'])
+        df = df[pd.notnull(df['DATE INSTALLED'])]
+        df = df[pd.notnull(df['PAYMENT DATE'])]
 
-        # print(df["DATE INSTALLED"].describe())
-        # print(df["PAYMENT DATE"].describe())
+        # Bin DAYS TO PAYMENT
+        daysToPaymentBins = [-1000, 0, 7, 14, 21, 28, 1000]
+        daysToPaymentLabels = ['Before Installation', '1 Week', '2 Weeks', '3 Weeks', '4 Weeks', '1+ Months']
+        df['DAYS_TO_PAYMENT'] = pd.cut(df['DAYS_TO_PAYMENT'], bins=daysToPaymentBins, labels=daysToPaymentLabels)
 
-        print(df["DAYS_TO_PAYMENT"])
+        print(df["DAYS_TO_PAYMENT"].value_counts())
 
         # removing outliers for training data
         # envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
