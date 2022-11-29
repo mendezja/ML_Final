@@ -23,30 +23,49 @@ from scipy import stats
 class EDA(object):
 
     def __init__(self):
-        # Removed columns that had too many missing data or didn't logically make sense to include 
-        self.columns = ['CONTRACTOR','STONE COLOR', 'DATE INSTALLED','PLACE INSTALLED', 'SQFT','PROJECT COST', 'MATERIAL COST', 'DEPOSIT', 'PAYMENT DATE']
+        # Removed columns that had too many missing data or didn't logically make sense to include
+        self.columns = ['CONTRACTOR', 'STONE COLOR', 'DATE INSTALLED',
+                        'PLACE INSTALLED', 'SQFT', 'PROJECT COST', 'DEPOSIT', 'PAYMENT DATE']
         self.df = pd.read_csv("production19-21.csv", usecols=self.columns)
-        print(self.df)
-        
+
     def prepare_data(self):
         df = self.df
 
+        # Bin Contractor, Stone Color, and Place Installed because too many unique values
+        # Replace values with count less than minCount to OTHER
+        minCount = 20
+        df.loc[df.groupby('CONTRACTOR')["CONTRACTOR"].transform(
+            'count').lt(minCount), 'CONTRACTOR'] = "OTHER"
+        print("\nCONTRACTOR feature summary")
+        print(self.df["CONTRACTOR"].describe())
+        print("\nCONTRACTOR feature value counts")
+        print(self.df["CONTRACTOR"].value_counts())
+
+        df.loc[df.groupby('STONE COLOR')["STONE COLOR"].transform(
+            'count').lt(minCount), 'STONE COLOR'] = "OTHER"
+        print("\nSTONE COLOR feature summary")
+        print(self.df["STONE COLOR"].describe())
+        print("\nSTONE COLOR feature value counts")
+        print(self.df["STONE COLOR"].value_counts())
+
+        df.loc[df.groupby('PLACE INSTALLED')["PLACE INSTALLED"].transform(
+            'count').lt(minCount), 'PLACE INSTALLED'] = "OTHER"
+        print("\nPLACE INSTALLED feature summary")
+        print(self.df["PLACE INSTALLED"].describe())
+        print("\nPLACE INSTALLED feature value counts")
+        print(self.df["PLACE INSTALLED"].value_counts())
+
         # removing outliers for training data
-        envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
-                                    store_precision=True, support_fraction=None)
-        pred = envelope.fit_predict(df)
+        # envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
+        #                             store_precision=True, support_fraction=None)
+        # pred = envelope.fit_predict(df)
 
-        for i in range(len(pred)):
-            if pred[i] == -1:
-                # print(df.iloc[[i]])
-                df.drop(index=i, inplace=True)
+        # for i in range(len(pred)):
+        #     if pred[i] == -1:
+        #         # print(df.iloc[[i]])
+        #         df.drop(index=i, inplace=True)
 
-        # No Nan values means no imputation needed
-        # print(df.isna().sum())
-
-        # Drop all features except 1, 2, 4, 5 from feature selection
-        df = df.drop(df.columns[[2,5,6,7]], axis=1)
-        self.columns = self.df.columns
+        #
 
         self.df = df
 
@@ -157,6 +176,7 @@ class EDA(object):
 
 def main():
     eda = EDA()
+    eda.prepare_data()
 
 
 if __name__ == "__main__":
