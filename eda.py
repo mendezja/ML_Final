@@ -36,24 +36,39 @@ class EDA(object):
         minCount = 20
         df.loc[df.groupby('CONTRACTOR')["CONTRACTOR"].transform(
             'count').lt(minCount), 'CONTRACTOR'] = "OTHER"
-        print("\nCONTRACTOR feature summary")
-        print(self.df["CONTRACTOR"].describe())
-        print("\nCONTRACTOR feature value counts")
-        print(self.df["CONTRACTOR"].value_counts())
+        # print("\nCONTRACTOR feature summary")
+        # print(self.df["CONTRACTOR"].describe())
+        # print("\nCONTRACTOR feature value counts")
+        # print(self.df["CONTRACTOR"].value_counts())
 
         df.loc[df.groupby('STONE COLOR')["STONE COLOR"].transform(
             'count').lt(minCount), 'STONE COLOR'] = "OTHER"
-        print("\nSTONE COLOR feature summary")
-        print(self.df["STONE COLOR"].describe())
-        print("\nSTONE COLOR feature value counts")
-        print(self.df["STONE COLOR"].value_counts())
+        # print("\nSTONE COLOR feature summary")
+        # print(self.df["STONE COLOR"].describe())
+        # print("\nSTONE COLOR feature value counts")
+        # print(self.df["STONE COLOR"].value_counts())
 
         df.loc[df.groupby('PLACE INSTALLED')["PLACE INSTALLED"].transform(
             'count').lt(minCount), 'PLACE INSTALLED'] = "OTHER"
-        print("\nPLACE INSTALLED feature summary")
-        print(self.df["PLACE INSTALLED"].describe())
-        print("\nPLACE INSTALLED feature value counts")
-        print(self.df["PLACE INSTALLED"].value_counts())
+        # print("\nPLACE INSTALLED feature summary")
+        # print(self.df["PLACE INSTALLED"].describe())
+        # print("\nPLACE INSTALLED feature value counts")
+        # print(self.df["PLACE INSTALLED"].value_counts())
+
+        # Engineer new feature DAYS_TO_PAYMENT
+        # Turn string into date
+        df['DATE INSTALLED'] = pd.to_datetime(df['DATE INSTALLED'], errors='coerce')
+        df['PAYMENT DATE'] = pd.to_datetime(df['PAYMENT DATE'], errors='coerce')
+        df['DAYS_TO_PAYMENT'] = (df['PAYMENT DATE'] - df['DATE INSTALLED'])
+
+        # Drop rows without date
+        df = df.replace({'nan': None})[~pd.isnull(df).any(axis=1)]
+        df = df.dropna(subset = ['DATE INSTALLED','PAYMENT DATE'])
+
+        # print(df["DATE INSTALLED"].describe())
+        # print(df["PAYMENT DATE"].describe())
+
+        print(df["DAYS_TO_PAYMENT"])
 
         # removing outliers for training data
         # envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
