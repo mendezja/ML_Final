@@ -33,7 +33,8 @@ class EDA(object):
 
         # Bin Contractor, Stone Color, and Place Installed because too many unique values
         # Replace values with count less than minCount to OTHER
-        minCount = 20
+        # TODO experiment with minCount
+        minCount = 100
         df.loc[df.groupby('CONTRACTOR')["CONTRACTOR"].transform(
             'count').lt(minCount), 'CONTRACTOR'] = "OTHER"
         # print("\nCONTRACTOR feature summary")
@@ -47,6 +48,7 @@ class EDA(object):
         # print(self.df["STONE COLOR"].describe())
         # print("\nSTONE COLOR feature value counts")
         # print(self.df["STONE COLOR"].value_counts())
+        # TODO drop STONE COLOR?
 
         df.loc[df.groupby('PLACE INSTALLED')["PLACE INSTALLED"].transform(
             'count').lt(minCount), 'PLACE INSTALLED'] = "OTHER"
@@ -55,11 +57,17 @@ class EDA(object):
         # print("\nPLACE INSTALLED feature value counts")
         # print(self.df["PLACE INSTALLED"].value_counts())
 
+        # One hot encoding
+        df = pd.get_dummies(df, columns=['CONTRACTOR','STONE COLOR','PLACE INSTALLED'])
+
         # Engineer new feature DAYS_TO_PAYMENT
         # Turn string into date
-        df['DATE INSTALLED'] = pd.to_datetime(df['DATE INSTALLED'], errors='coerce')
-        df['PAYMENT DATE'] = pd.to_datetime(df['PAYMENT DATE'], errors='coerce')
-        df['DAYS_TO_PAYMENT'] = (df['PAYMENT DATE'] - df['DATE INSTALLED']).dt.days
+        df['DATE INSTALLED'] = pd.to_datetime(
+            df['DATE INSTALLED'], errors='coerce')
+        df['PAYMENT DATE'] = pd.to_datetime(
+            df['PAYMENT DATE'], errors='coerce')
+        df['DAYS_TO_PAYMENT'] = (
+            df['PAYMENT DATE'] - df['DATE INSTALLED']).dt.days
 
         # Drop rows without date
         df = df[pd.notnull(df['DATE INSTALLED'])]
@@ -67,10 +75,17 @@ class EDA(object):
 
         # Bin DAYS TO PAYMENT
         daysToPaymentBins = [-1000, 0, 7, 14, 21, 28, 1000]
-        daysToPaymentLabels = ['Before Installation', '1 Week', '2 Weeks', '3 Weeks', '4 Weeks', '1+ Months']
-        df['DAYS_TO_PAYMENT'] = pd.cut(df['DAYS_TO_PAYMENT'], bins=daysToPaymentBins, labels=daysToPaymentLabels)
+        # Bins; 'Before Installation', '1 Week', '2 Weeks', '3 Weeks', '4 Weeks', '1+ Months'
+        daysToPaymentLabels = [0, 1, 2, 3, 4, 5]
+        df['DAYS_TO_PAYMENT'] = pd.cut(
+            df['DAYS_TO_PAYMENT'], bins=daysToPaymentBins, labels=daysToPaymentLabels)
 
-        print(df["DAYS_TO_PAYMENT"].value_counts())
+        # Remove PAYMENT DATE and DATE INSTALLED
+        df.drop(['DATE INSTALLED', 'PAYMENT DATE'], axis=1, inplace=True)
+
+        # Turn deposit into categorical
+        df["DEPOSIT"] = df["DEPOSIT"].fillna(0)
+        df.loc[df['DEPOSIT'] > 0, 'DEPOSIT'] = 1
 
         # removing outliers for training data
         # envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
@@ -83,7 +98,7 @@ class EDA(object):
         #         df.drop(index=i, inplace=True)
 
         #
-
+        print(df)
         self.df = df
 
     def feature_selection(self):
