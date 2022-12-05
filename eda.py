@@ -18,15 +18,15 @@ from sklearn.utils import resample
 from sklearn.svm import SVC
 from pandas import to_datetime
 from scipy import stats
-
-
+ 
 class EDA(object):
 
     def __init__(self):
         # Removed columns that had too many missing data or didn't logically make sense to include
         self.columns = ['CONTRACTOR', 'STONE COLOR', 'DATE INSTALLED',
-                        'PLACE INSTALLED', 'SQFT', 'PROJECT COST', 'DEPOSIT', 'PAYMENT DATE']
+                        'PLACE INSTALLED', 'SQFT', 'PROJECT COST', 'DEPOSIT', 'PAYMENT DATE'] #look into including po number, diposit date? (), total paid (represents cost of job to client)
         self.df = pd.read_csv("Production2019-2021.csv", usecols=self.columns)
+        self.target = 'DAYS_TO_PAYMENT'
 
     def prepare_data(self):
         df = self.df
@@ -86,19 +86,31 @@ class EDA(object):
         # Turn deposit into categorical
         df["DEPOSIT"] = df["DEPOSIT"].fillna(0)
         df.loc[df['DEPOSIT'] > 0, 'DEPOSIT'] = 1
+        
+        
+        # convert columns SQFT and PROJECT COST from object to int
+        df["SQFT"] = pd.to_numeric(df["SQFT"], errors='coerce')
+        df["PROJECT COST"] = pd.to_numeric(df["PROJECT COST"], errors='coerce')
+
+        # SQFT: NA -> 0
+        # Since some jobs are "removals/fixes", missing values represent 0 sqft 
+        df["SQFT"] = df["SQFT"].fillna(0) 
 
         # removing outliers for training data
-        # envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
-        #                             store_precision=True, support_fraction=None)
-        # pred = envelope.fit_predict(df)
+        # TODO Test without outlier removal
+        envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
+                                    store_precision=True, support_fraction=None)
+        pred = envelope.fit_predict(df)
 
-        # for i in range(len(pred)):
-        #     if pred[i] == -1:
-        #         # print(df.iloc[[i]])
-        #         df.drop(index=i, inplace=True)
+        offset = 0
+        for i in range(len(pred)):
+            if pred[i] == -1:
+                # print(df.iloc[[i]])
+                df.drop(index=(i-offset), inplace=True) # Bro have you been doing this wrong all along?
+                offset +=1
+                # print(len(df))
 
-        #
-        print(df)
+        # print(df)
         self.df = df
 
     def feature_selection(self):
@@ -109,13 +121,13 @@ class EDA(object):
         scaler = MaxAbsScaler().fit(X)
         X_scaled = scaler.transform(X)
 
-        clf = SVC(kernel="linear")
+        clf = SVC(decision_function_shape='ovo')
 
         sfs = SequentialFeatureSelector(clf,
                                         k_features=1,
                                         forward=False,
                                         floating=False,
-                                        scoring='recall',
+                                        scoring='accuracy',
                                         cv=5, n_jobs=-1)
         sfs = sfs.fit(X_scaled, y)
         print(sfs.k_feature_names_)
@@ -128,49 +140,52 @@ class EDA(object):
                         kind='std_dev',
                         figsize=(6, 4))
 
-        plt.ylim([0.8, 1])
+        plt.ylim([0, 1])
         plt.title('Sequential Backward Selection')
         plt.grid()
         plt.show()
 
     def draw_plots(self):
         df = self.df
-        # col1 = self.columns[0:6]
-        # col2 = self.columns[6:12]
+        numCols = len(df.columns)
+        # col1 = df.columns[0:(numCols//2)]
+        # col2 = df.columns[(numCols//2 +1):numCols]
+    
 
-        # scatterplotmatrix(df[col1].values, names=col1, alpha=0.1)
+        # scatterplotmatrix(df[col1].values, names=col1,figsize = (8, 8), alpha=0.1)
         # plt.tight_layout()
         # plt.title("Scatter Plot Matrix")
         # plt.show()
 
-        # scatterplotmatrix(df[col2].values, names=col2, alpha=0.1)
+        # scatterplotmatrix(df[col2].values, names=col2,figsize = (8, 8), alpha=0.1)
         # plt.tight_layout()
         # plt.title("Scatter Plot Matrix")
         # plt.show()
 
-        scatterplotmatrix(df.values, names=self.columns, alpha=0.1)
+        scatterplotmatrix(df.values, names=df.columns, alpha=0.1)
         plt.tight_layout()
         plt.title("Scatter Plot Matrix")
         plt.show()
 
         cm = np.corrcoef(df.values.T)
-        heatmap(cm, row_names=self.columns, column_names=self.columns)
+        heatmap(cm, row_names=df.columns, column_names=df.columns)
         plt.title("Pearson’s R")
         plt.show()
 
     def upsample(self, X_train, y_train):
         df_X = pd.DataFrame(X_train)
-        df_y = pd.DataFrame(y_train, columns=['target'])
+        df_y = pd.DataFrame(y_train, columns=[self.target])
         df = pd.concat([df_X, df_y], axis=1)
+        # print(df[self.target].value_counts())
 
         # frequency of mode
-        m = (df['target'] == 0).sum()
+        m = (df[self.target] == 0).sum()
 
         # minority classes
-        df_min = df[df['target'] == 1]
+        df_min = df[df[self.target] == 4]
 
         # majority class
-        df_maj = df[df['target'] == 0]
+        df_maj = df[df[self.target] == 0]
 
         # upsample the minority classes
         df_min_upsampled = resample(
@@ -194,21 +209,29 @@ class EDA(object):
         # Scale data (do this in pipeline instead)
         # X = self.scale_data()
 
-        y = self.df.loc[:, self.df.columns == 'target'].to_numpy()
+        y = self.df.loc[:, self.df.columns == 'DAYS_TO_PAYMENT'].to_numpy()
 
         # Split into testing and training
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.3, random_state=1, stratify=y)
 
         # Upsample data, do this after split to prevent data leakage
-        X_train, y_train = self.upsample(X_train, y_train)
+        # TODO Test upsample, diffrence from max to min: 325-87 = 238
+        # X_train, y_train = self.upsample(X_train, y_train)
 
         return X_train, X_test, y_train, y_test
 
 
 def main():
     eda = EDA()
-    eda.prepare_data()
+    # eda.prepare_data()
+    # eda.draw_plots()
+    # X_train, X_test, y_train, y_test = eda.train_test_split()
+
+    eda.feature_selection()
+    
+    # print(X_train)
+    # print(y_train)
 
 
 if __name__ == "__main__":
