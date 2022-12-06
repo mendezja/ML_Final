@@ -13,6 +13,7 @@ from sklearn.pipeline import make_pipeline
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 from mlxtend.feature_selection import SequentialFeatureSelector
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.covariance import EllipticEnvelope
 from sklearn.utils import resample
 from sklearn.svm import SVC
@@ -34,7 +35,7 @@ class EDA(object):
         # Bin Contractor, Stone Color, and Place Installed because too many unique values
         # Replace values with count less than minCount to OTHER
         # TODO experiment with minCount
-        minCount = 100
+        minCount = 200
         df.loc[df.groupby('CONTRACTOR')["CONTRACTOR"].transform(
             'count').lt(minCount), 'CONTRACTOR'] = "OTHER"
         # print("\nCONTRACTOR feature summary")
@@ -74,9 +75,9 @@ class EDA(object):
         df = df[pd.notnull(df['PAYMENT DATE'])]
 
         # Bin DAYS TO PAYMENT
-        daysToPaymentBins = [-1000, 0, 7, 14, 21, 28, 1000]
+        daysToPaymentBins = [-1000, 0, 28, 1000]
         # Bins; 'Before Installation', '1 Week', '2 Weeks', '3 Weeks', '4 Weeks', '1+ Months'
-        daysToPaymentLabels = [0, 1, 2, 3, 4, 5]
+        daysToPaymentLabels = [0, 1, 2]
         df['DAYS_TO_PAYMENT'] = pd.cut(
             df['DAYS_TO_PAYMENT'], bins=daysToPaymentBins, labels=daysToPaymentLabels)
 
@@ -98,17 +99,12 @@ class EDA(object):
 
         # removing outliers for training data
         # TODO Test without outlier removal
-        envelope = EllipticEnvelope(assume_centered=False, contamination=0.01, random_state=None,
+        df = df.dropna()
+        envelope = EllipticEnvelope(assume_centered=False, contamination=0.1, random_state=None,
                                     store_precision=True, support_fraction=None)
         pred = envelope.fit_predict(df)
-
-        offset = 0
-        for i in range(len(pred)):
-            if pred[i] == -1:
-                # print(df.iloc[[i]])
-                df.drop(index=(i-offset), inplace=True) # Bro have you been doing this wrong all along?
-                offset +=1
-                # print(len(df))
+        # Remove outliers
+        df = df[pred == 1]
 
         # print(df)
         self.df = df
@@ -121,7 +117,9 @@ class EDA(object):
         scaler = MaxAbsScaler().fit(X)
         X_scaled = scaler.transform(X)
 
-        clf = SVC(decision_function_shape='ovo')
+        clf = SVC(C=10)
+        # clf = DecisionTreeClassifier()
+        # clf = RandomForestClassifier()
 
         sfs = SequentialFeatureSelector(clf,
                                         k_features=1,
