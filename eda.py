@@ -6,12 +6,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mlxtend.plotting import scatterplotmatrix, heatmap, category_scatter
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler, MaxAbsScaler, RobustScaler
-from sklearn.model_selection import train_test_split, cross_validate
+from sklearn.model_selection import train_test_split, cross_validate,cross_val_score
 from sklearn.metrics import make_scorer, f1_score, accuracy_score, precision_score, recall_score
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import make_pipeline, Pipeline
 # from sklearn.feature_selection import SequentialFeatureSelector
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
-from mlxtend.feature_selection import SequentialFeatureSelector
+from mlxtend.feature_selection import SequentialFeatureSelector 
+from sklearn.feature_selection import chi2, SelectKBest,  SelectPercentile
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.covariance import EllipticEnvelope
@@ -108,6 +109,52 @@ class EDA(object):
 
         # print(df)
         self.df = df
+
+
+
+
+    def chiSq_feature_select(self):
+        X, X_test, y,  y_test = self.train_test_split()
+        y = y.flatten()
+        # # Graph Chi Sq effects on feature selection
+        # clf = Pipeline(
+        #     [
+        #         ("anova", SelectPercentile(chi2)),
+        #         ("scaler", StandardScaler()),
+        #         ("svc", SVC(gamma="auto")),
+        #     ]
+        # )
+        # score_means = list()
+        # score_stds = list()
+        # percentiles = (1, 3, 6, 10, 15, 20, 30, 40, 60, 80, 100)
+
+        # for percentile in percentiles:
+        #     clf.set_params(anova__percentile=percentile)
+        #     this_scores = cross_val_score(clf, X, y)
+        #     score_means.append(this_scores.mean())
+        #     score_stds.append(this_scores.std())
+
+        # plt.errorbar(percentiles, score_means, np.array(score_stds))
+        # plt.title("Performance of the SVM varying the percentile of features selected using Chi Sq")
+        # plt.xticks(np.linspace(0, 100, 11, endpoint=True))
+        # plt.xlabel("Percentile")
+        # plt.ylabel("Accuracy Score")
+        # plt.axis("tight")
+        # plt.show()
+
+
+        '''chi squared test'''
+        ch2 = chi2(X,y)
+        print("Chi Squared values:")
+        print (ch2[0])
+        print ("P_values: " )
+        print(ch2[1])
+        X_new = SelectKBest(chi2, k=10).fit_transform(X, y)
+        # print (X_new)
+        # return X_new
+
+
+
 
     def feature_selection(self):
         '''Sequential Backward Selection'''
@@ -223,6 +270,7 @@ class EDA(object):
 def main():
     eda = EDA()
     # eda.prepare_data()
+    # eda.chiSq_feature_select()
     # eda.draw_plots()
     # X_train, X_test, y_train, y_test = eda.train_test_split()
 
