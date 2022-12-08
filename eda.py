@@ -32,7 +32,6 @@ class EDA(object):
 
     def prepare_data(self):
         df = self.df
-
         # Bin Contractor, Stone Color, and Place Installed because too many unique values
         # Replace values with count less than minCount to OTHER
         # TODO experiment with minCount
@@ -269,14 +268,14 @@ class EDA(object):
 
 def main():
     eda = EDA()
-    # eda.prepare_data()
-    # eda.chiSq_feature_select()
-    # eda.draw_plots()
-    # X_train, X_test, y_train, y_test = eda.train_test_split()
+   #eda.prepare_data()
+   #eda.chiSq_feature_select()
+   #eda.draw_plots()
+   #X_train, X_test, y_train, y_test = eda.train_test_split()
 
-    eda.feature_selection()
+    #eda.feature_selection()
     
-    # print(X_train)
+    #print(X_train)
     # print(y_train)
 
 
