@@ -32,19 +32,18 @@ class EDA(object):
 
     def prepare_data(self):
         df = self.df
+
         # Bin Contractor, Stone Color, and Place Installed because too many unique values
         # Replace values with count less than minCount to OTHER
         # TODO experiment with minCount
         minCount = 200
-        df.loc[df.groupby('CONTRACTOR')["CONTRACTOR"].transform(
-            'count').lt(minCount), 'CONTRACTOR'] = "OTHER"
+        df.loc[df.groupby('CONTRACTOR')["CONTRACTOR"].transform('count').lt(minCount), 'CONTRACTOR'] = "OTHER"
         # print("\nCONTRACTOR feature summary")
         # print(self.df["CONTRACTOR"].describe())
         # print("\nCONTRACTOR feature value counts")
         # print(self.df["CONTRACTOR"].value_counts())
 
-        df.loc[df.groupby('STONE COLOR')["STONE COLOR"].transform(
-            'count').lt(minCount), 'STONE COLOR'] = "OTHER"
+        df.loc[df.groupby('STONE COLOR')["STONE COLOR"].transform('count').lt(minCount), 'STONE COLOR'] = "OTHER"
         # print("\nSTONE COLOR feature summary")
         # print(self.df["STONE COLOR"].describe())
         # print("\nSTONE COLOR feature value counts")
@@ -75,9 +74,9 @@ class EDA(object):
         df = df[pd.notnull(df['PAYMENT DATE'])]
 
         # Bin DAYS TO PAYMENT
-        daysToPaymentBins = [-1000, 0, 28, 1000]
+        daysToPaymentBins = [-1000, 12, 1000]
         # Bins; 'Before Installation', '1 Week', '2 Weeks', '3 Weeks', '4 Weeks', '1+ Months'
-        daysToPaymentLabels = [0, 1, 2]
+        daysToPaymentLabels = [0, 1]
         df['DAYS_TO_PAYMENT'] = pd.cut(
             df['DAYS_TO_PAYMENT'], bins=daysToPaymentBins, labels=daysToPaymentLabels)
 
@@ -268,14 +267,15 @@ class EDA(object):
 
 def main():
     eda = EDA()
-   #eda.prepare_data()
-   #eda.chiSq_feature_select()
-   #eda.draw_plots()
-   #X_train, X_test, y_train, y_test = eda.train_test_split()
+    eda.prepare_data()
+    #eda.chiSq_feature_select()
+    #eda.draw_plots()
+    #X_train, X_test, y_train, y_test = eda.train_test_split()
 
     #eda.feature_selection()
+    eda.draw_plots()
     
-    #print(X_train)
+    # print(X_train)
     # print(y_train)
 
 
