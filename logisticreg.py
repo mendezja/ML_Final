@@ -13,6 +13,7 @@ from eda import EDA
 
 eda = EDA()
 X_train, X_test, y_train, y_test = eda.train_test_split()
+print(np.shape(X_train))
 
 lr = LogisticRegression(C=100.0, random_state=1, solver='lbfgs', multi_class='ovr')
 pipeline = make_pipeline(MaxAbsScaler(), lr)
